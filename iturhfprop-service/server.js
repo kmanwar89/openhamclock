@@ -111,7 +111,7 @@ UL.lng ${rxLon.toFixed(4)}
 UR.lat ${rxLat.toFixed(4)}
 UR.lng ${rxLon.toFixed(4)}
 DataFilePath "${ITURHFPROP_DATA}/Data/"
-RptFilePath "${tmpDir}/"
+RptFilePath "/tmp/"
 RptFileFormat "RPT_PR | RPT_SNR | RPT_BCR"
 `;
 
