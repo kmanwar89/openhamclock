@@ -10,7 +10,9 @@ export const useDXCluster = (source = 'auto', filters = {}) => {
   const [data, setData] = useState([]); // Filtered spots for display
   const [loading, setLoading] = useState(true);
   const [activeSource, setActiveSource] = useState('');
-  const spotRetentionMs = 30 * 60 * 1000; // 30 minutes
+  
+  // Get retention time from filters, default to 30 minutes
+  const spotRetentionMs = (filters?.spotRetentionMinutes || 30) * 60 * 1000;
   const pollInterval = 5000; // 5 seconds
 
   // Apply filters to spots
@@ -126,7 +128,15 @@ export const useDXCluster = (source = 'auto', filters = {}) => {
     fetchData();
     const interval = setInterval(fetchData, pollInterval);
     return () => clearInterval(interval);
-  }, [source]);
+  }, [source, spotRetentionMs]);
+
+  // Clean up spots immediately when retention time changes
+  useEffect(() => {
+    setAllSpots(prev => {
+      const now = Date.now();
+      return prev.filter(s => (now - (s.timestamp || now)) < spotRetentionMs);
+    });
+  }, [spotRetentionMs]);
 
   // Apply filters whenever allSpots or filters change
   useEffect(() => {

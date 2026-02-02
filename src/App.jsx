@@ -229,8 +229,8 @@ const App = () => {
         transform: `scale(${scale})`,
         transformOrigin: 'center center',
         display: 'grid',
-        gridTemplateColumns: '260px 1fr 300px',
-        gridTemplateRows: '50px 1fr',
+        gridTemplateColumns: '270px 1fr 300px',
+        gridTemplateRows: '65px 1fr',
         gap: '8px',
         padding: '8px',
         overflow: 'hidden',
@@ -255,31 +255,31 @@ const App = () => {
         {/* LEFT SIDEBAR */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', overflowX: 'hidden' }}>
           {/* DE Location */}
-          <div className="panel" style={{ padding: '12px', flex: '0 0 auto' }}>
-            <div style={{ fontSize: '13px', color: 'var(--accent-cyan)', fontWeight: '700', marginBottom: '8px' }}>📍 DE - YOUR LOCATION</div>
-            <div style={{ fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
-              <div style={{ color: 'var(--accent-amber)', fontSize: '18px', fontWeight: '700' }}>{deGrid}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '2px' }}>{config.location.lat.toFixed(2)}°, {config.location.lon.toFixed(2)}°</div>
-              <div style={{ marginTop: '6px', fontSize: '12px' }}>
+          <div className="panel" style={{ padding: '14px', flex: '0 0 auto' }}>
+            <div style={{ fontSize: '14px', color: 'var(--accent-cyan)', fontWeight: '700', marginBottom: '10px' }}>📍 DE - YOUR LOCATION</div>
+            <div style={{ fontFamily: 'JetBrains Mono', fontSize: '14px' }}>
+              <div style={{ color: 'var(--accent-amber)', fontSize: '22px', fontWeight: '700', letterSpacing: '1px' }}>{deGrid}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>{config.location.lat.toFixed(4)}°, {config.location.lon.toFixed(4)}°</div>
+              <div style={{ marginTop: '8px', fontSize: '13px' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>☀ </span>
-                <span style={{ color: 'var(--accent-amber)' }}>{deSunTimes.sunrise}</span>
+                <span style={{ color: 'var(--accent-amber)', fontWeight: '600' }}>{deSunTimes.sunrise}</span>
                 <span style={{ color: 'var(--text-secondary)' }}> → </span>
-                <span style={{ color: 'var(--accent-purple)' }}>{deSunTimes.sunset}</span>
+                <span style={{ color: 'var(--accent-purple)', fontWeight: '600' }}>{deSunTimes.sunset}</span>
               </div>
             </div>
           </div>
           
           {/* DX Location */}
-          <div className="panel" style={{ padding: '12px', flex: '0 0 auto' }}>
-            <div style={{ fontSize: '13px', color: 'var(--accent-green)', fontWeight: '700', marginBottom: '8px' }}>🎯 DX - TARGET</div>
-            <div style={{ fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
-              <div style={{ color: 'var(--accent-amber)', fontSize: '18px', fontWeight: '700' }}>{dxGrid}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '2px' }}>{dxLocation.lat.toFixed(2)}°, {dxLocation.lon.toFixed(2)}°</div>
-              <div style={{ marginTop: '6px', fontSize: '12px' }}>
+          <div className="panel" style={{ padding: '14px', flex: '0 0 auto' }}>
+            <div style={{ fontSize: '14px', color: 'var(--accent-green)', fontWeight: '700', marginBottom: '10px' }}>🎯 DX - TARGET</div>
+            <div style={{ fontFamily: 'JetBrains Mono', fontSize: '14px' }}>
+              <div style={{ color: 'var(--accent-amber)', fontSize: '22px', fontWeight: '700', letterSpacing: '1px' }}>{dxGrid}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>{dxLocation.lat.toFixed(4)}°, {dxLocation.lon.toFixed(4)}°</div>
+              <div style={{ marginTop: '8px', fontSize: '13px' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>☀ </span>
-                <span style={{ color: 'var(--accent-amber)' }}>{dxSunTimes.sunrise}</span>
+                <span style={{ color: 'var(--accent-amber)', fontWeight: '600' }}>{dxSunTimes.sunrise}</span>
                 <span style={{ color: 'var(--text-secondary)' }}> → </span>
-                <span style={{ color: 'var(--accent-purple)' }}>{dxSunTimes.sunset}</span>
+                <span style={{ color: 'var(--accent-purple)', fontWeight: '600' }}>{dxSunTimes.sunset}</span>
               </div>
             </div>
           </div>

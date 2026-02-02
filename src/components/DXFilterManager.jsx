@@ -1,6 +1,6 @@
 /**
  * DXFilterManager Component
- * Filter modal with tabs for Zones, Bands, Modes, Watchlist, Exclude
+ * Filter modal with tabs for Zones, Bands, Modes, Watchlist, Exclude, Settings
  */
 import React, { useState } from 'react';
 
@@ -313,6 +313,77 @@ export const DXFilterManager = ({ filters, onFilterChange, isOpen, onClose }) =>
     </div>
   );
 
+  const renderSettingsTab = () => {
+    const retentionMinutes = filters?.spotRetentionMinutes || 30;
+    
+    return (
+      <div>
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '12px' }}>
+            Spot Retention Time
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+            How long to keep DX spots on the map before they expire. Shorter times show only the most recent activity.
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <input
+              type="range"
+              min="5"
+              max="30"
+              step="5"
+              value={retentionMinutes}
+              onChange={(e) => onFilterChange({ ...filters, spotRetentionMinutes: parseInt(e.target.value) })}
+              style={{ flex: 1, cursor: 'pointer' }}
+            />
+            <div style={{ 
+              minWidth: '80px', 
+              textAlign: 'center',
+              padding: '8px 12px',
+              background: 'var(--bg-tertiary)',
+              borderRadius: '4px',
+              fontFamily: 'JetBrains Mono',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: 'var(--accent-cyan)'
+            }}>
+              {retentionMinutes} min
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
+            <span>5 min (freshest)</span>
+            <span>30 min (default)</span>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '12px' }}>
+            Quick Presets
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {[5, 10, 15, 20, 30].map(mins => (
+              <button
+                key={mins}
+                onClick={() => onFilterChange({ ...filters, spotRetentionMinutes: mins })}
+                style={{
+                  padding: '8px 16px',
+                  background: retentionMinutes === mins ? 'rgba(0, 221, 255, 0.2)' : 'var(--bg-tertiary)',
+                  border: `1px solid ${retentionMinutes === mins ? 'var(--accent-cyan)' : 'var(--border-color)'}`,
+                  borderRadius: '4px',
+                  color: retentionMinutes === mins ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  fontFamily: 'JetBrains Mono'
+                }}
+              >
+                {mins} min
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div style={{
       position: 'fixed',
@@ -391,6 +462,7 @@ export const DXFilterManager = ({ filters, onFilterChange, isOpen, onClose }) =>
           <button onClick={() => setActiveTab('modes')} style={tabStyle(activeTab === 'modes')}>Modes</button>
           <button onClick={() => setActiveTab('watchlist')} style={tabStyle(activeTab === 'watchlist')}>Watchlist</button>
           <button onClick={() => setActiveTab('exclude')} style={tabStyle(activeTab === 'exclude')}>Exclude</button>
+          <button onClick={() => setActiveTab('settings')} style={tabStyle(activeTab === 'settings')}>⚙ Settings</button>
         </div>
 
         {/* Tab Content */}
@@ -400,6 +472,7 @@ export const DXFilterManager = ({ filters, onFilterChange, isOpen, onClose }) =>
           {activeTab === 'modes' && renderModesTab()}
           {activeTab === 'watchlist' && renderWatchlistTab()}
           {activeTab === 'exclude' && renderExcludeTab()}
+          {activeTab === 'settings' && renderSettingsTab()}
         </div>
       </div>
     </div>
