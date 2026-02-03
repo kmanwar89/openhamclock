@@ -94,9 +94,10 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
       console.log(`🌋 Earthquake ${quakeId}:`, {
         place: props.place,
         mag: mag,
-        geojson: `[${coords[0]}, ${coords[1]}, ${coords[2]}]`,
-        extracted: `lat=${lat}, lon=${lon}`,
-        marker: `L.marker([${lat}, ${lon}])`
+        geojson: `[lon=${coords[0]}, lat=${coords[1]}, depth=${coords[2]}]`,
+        extracted: `lat=${lat} (coords[1]), lon=${lon} (coords[0])`,
+        leafletMarkerCall: `L.marker([${lat}, ${lon}])`,
+        explanation: `Leaflet expects [latitude, longitude] format`
       });
 
       currentQuakeIds.add(quakeId);
@@ -149,10 +150,9 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
         iconAnchor: [size/2, size/2]
       });
       
-      console.log('Creating earthquake marker:', quakeId, 'M' + mag.toFixed(1), 'at lat:', lat, 'lon:', lon, 'size:', size + 'px', 'color:', color);
-      // FIX: Swap coordinates - empirically markers were appearing in wrong locations
-      // Even though standard Leaflet expects [lat, lng], this specific setup requires [lon, lat]
-      const circle = L.marker([lon, lat], { 
+      console.log(`📍 Creating marker for ${quakeId}: M${mag.toFixed(1)} at [lat=${lat}, lon=${lon}] - ${props.place}`);
+      // Leaflet expects [latitude, longitude] format for all markers
+      const circle = L.marker([lat, lon], { 
         icon, 
         opacity,
         zIndexOffset: 10000 // Ensure markers appear on top
@@ -185,8 +185,8 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
           }
         }, 10);
         
-        // Create pulsing ring effect - also swap coordinates to match marker location
-        const pulseRing = L.circle([lon, lat], {
+        // Create pulsing ring effect
+        const pulseRing = L.circle([lat, lon], {
           radius: 50000, // 50km radius in meters
           fillColor: color,
           fillOpacity: 0,
