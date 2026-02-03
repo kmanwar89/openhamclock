@@ -156,10 +156,10 @@ export function useLayer({ enabled = false, opacity = 0.7, map = null, callsign 
     try {
       console.log(`[RBN] Fetching spots for ${callsign}...`);
       
-      // RBN API endpoint - using their public API
-      // Format: http://www.reversebeacon.net/dxsd1/dxsd1.php?f=0&c=CALLSIGN&t=skimmer
+      // RBN API endpoint - using PSKReporter for CW spots
+      // Format: /api/rbn?callsign=CALLSIGN&minutes=60
       const response = await fetch(
-        `/api/rbn?callsign=${encodeURIComponent(callsign)}&limit=100`,
+        `/api/rbn?callsign=${encodeURIComponent(callsign)}&minutes=${timeWindow}`,
         { headers: { 'Accept': 'application/json' } }
       );
       

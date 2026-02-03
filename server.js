@@ -2253,7 +2253,7 @@ app.get('/api/pskreporter/:callsign', async (req, res) => {
 // ============================================
 
 // RBN endpoint - who's hearing YOUR signal
-// Using RBN Aggregator API: http://rbn.telegraphy.de/
+// Using PSKReporter for CW/RTTY spots (more reliable than RBN direct API)
 let rbnCache = new Map(); // Cache by callsign
 const RBN_CACHE_TTL = 2 * 60 * 1000; // 2 minutes cache
 
@@ -2274,12 +2274,14 @@ app.get('/api/rbn', async (req, res) => {
   }
   
   try {
-    // RBN Aggregator JSON API
-    // Endpoint: http://rbn.telegraphy.de/api/v1/dx/
-    // Query for spots where YOUR callsign was heard (you are the dx_call)
-    const url = `http://rbn.telegraphy.de/api/v1/dx/?dx_call=${encodeURIComponent(callsign)}&limit=${limit}`;
+    // Use PSKReporter API for RBN-style spots (CW mode)
+    // This is more reliable than the RBN aggregator
+    // Use senderCallsign to get reports of YOUR signal being heard by others
+    const minutes = parseInt(req.query.minutes) || 60;
+    const flowStartSeconds = -Math.abs(minutes * 60);
+    const url = `https://retrieve.pskreporter.info/query?senderCallsign=${encodeURIComponent(callsign)}&mode=CW&flowStartSeconds=${flowStartSeconds}&rronly=1&nolocator=0&appcontact=openhamclock`;
     
-    console.log(`[RBN] Fetching: ${url}`);
+    console.log(`[RBN] Fetching CW spots for ${callsign} from PSKReporter`);
     
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
@@ -2287,38 +2289,58 @@ app.get('/api/rbn', async (req, res) => {
     const response = await fetch(url, {
       headers: { 
         'User-Agent': 'OpenHamClock/3.12 (Amateur Radio Dashboard)',
-        'Accept': 'application/json'
+        'Accept': 'application/xml, */*'
       },
       signal: controller.signal
     });
     clearTimeout(timeout);
     
     if (!response.ok) {
-      throw new Error(`RBN API returned ${response.status}`);
+      throw new Error(`PSKReporter API returned ${response.status}`);
     }
     
-    const data = await response.json();
-    console.log(`[RBN] Received ${data.length || 0} spots for ${callsign}`);
+    const xml = await response.text();
+    const spots = [];
     
-    // Normalize the data format from RBN aggregator
-    // RBN aggregator format: {dx_call, de_call, de_cont, dx_freq, dx_band, dx_snr, de_pfx, dx_time, ...}
-    const normalizedSpots = (Array.isArray(data) ? data : []).map(spot => ({
-      callsign: spot.de_call || spot.de || spot.callsign,        // Skimmer that heard you
-      frequency: spot.dx_freq ? Math.round(spot.dx_freq * 1000) : 0, // Convert MHz to kHz
-      band: spot.dx_band || spot.band,
-      snr: spot.dx_snr !== undefined ? spot.dx_snr : (spot.db || spot.snr || 0),
-      mode: spot.dx_mode || spot.mode || 'CW',
-      grid: spot.de_grid || spot.grid,
-      timestamp: spot.dx_time || spot.time || new Date().toISOString(),
-      wpm: spot.dx_wpm || spot.wpm || spot.speed,
-      continent: spot.de_cont || spot.continent,
-      prefix: spot.de_pfx || spot.prefix,
-      comment: spot.comment
-    })).slice(0, limit);
+    // Parse XML response
+    const reportRegex = /<receptionReport[^>]*>/g;
+    let match;
+    
+    while ((match = reportRegex.exec(xml)) !== null) {
+      const report = match[0];
+      
+      // Extract attributes
+      const receiverCallsign = (report.match(/receiverCallsign="([^"]+)"/) || [])[1];
+      const receiverLocator = (report.match(/receiverLocator="([^"]+)"/) || [])[1];
+      const frequency = parseInt((report.match(/frequency="([^"]+)"/) || [])[1] || 0);
+      const snr = parseInt((report.match(/sNR="([^"]+)"/) || [])[1] || 0);
+      const flowStartSeconds = parseInt((report.match(/flowStartSeconds="([^"]+)"/) || [])[1] || 0);
+      const mode = (report.match(/mode="([^"]+)"/) || [])[1] || 'CW';
+      
+      if (receiverCallsign && receiverLocator) {
+        spots.push({
+          callsign: receiverCallsign,
+          grid: receiverLocator,
+          frequency: frequency,  // Already in Hz
+          band: freqToBandKHz(frequency / 1000),  // Convert Hz to kHz
+          snr: snr,
+          mode: mode,
+          timestamp: new Date((flowStartSeconds + 1262304000) * 1000).toISOString(),  // PSKReporter epoch offset
+          wpm: null,
+          continent: null,
+          prefix: null,
+          comment: null
+        });
+      }
+    }
+    
+    console.log(`[RBN] Received ${spots.length} CW spots for ${callsign}`);
+    
+    const limitedSpots = spots.slice(0, limit);
     
     // Cache the results
     rbnCache.set(callsign, {
-      data: normalizedSpots,
+      data: limitedSpots,
       timestamp: now
     });
     
@@ -2329,14 +2351,29 @@ app.get('/api/rbn', async (req, res) => {
       }
     }
     
-    console.log(`[RBN] Returning ${normalizedSpots.length} normalized spots for ${callsign}`);
-    res.json(normalizedSpots);
+    console.log(`[RBN] Returning ${limitedSpots.length} spots for ${callsign}`);
+    res.json(limitedSpots);
     
   } catch (error) {
     console.error('[RBN] Error:', error.message);
     res.json([]);
   }
 });
+
+// Helper function to convert frequency to band
+function freqToBandKHz(freqKHz) {
+  if (freqKHz >= 1800 && freqKHz < 2000) return '160m';
+  if (freqKHz >= 3500 && freqKHz < 4000) return '80m';
+  if (freqKHz >= 7000 && freqKHz < 7300) return '40m';
+  if (freqKHz >= 10100 && freqKHz < 10150) return '30m';
+  if (freqKHz >= 14000 && freqKHz < 14350) return '20m';
+  if (freqKHz >= 18068 && freqKHz < 18168) return '17m';
+  if (freqKHz >= 21000 && freqKHz < 21450) return '15m';
+  if (freqKHz >= 24890 && freqKHz < 24990) return '12m';
+  if (freqKHz >= 28000 && freqKHz < 29700) return '10m';
+  if (freqKHz >= 50000 && freqKHz < 54000) return '6m';
+  return 'Other';
+}
 
 // ============================================
 // WSPR PROPAGATION HEATMAP API
