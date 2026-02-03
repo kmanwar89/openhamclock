@@ -528,6 +528,7 @@ const App = () => {
                 showWSJTX={mapLayers.showWSJTX}
                 onToggleSatellites={toggleSatellites}
                 hoveredSpot={hoveredSpot}
+                callsign={config.callsign}
               />
               
               {/* Settings button overlay */}
@@ -835,6 +836,7 @@ const App = () => {
             showWSJTX={mapLayers.showWSJTX}
             onToggleSatellites={toggleSatellites}
             hoveredSpot={hoveredSpot}
+            callsign={config.callsign}
           />
           <div style={{ 
             position: 'absolute', 

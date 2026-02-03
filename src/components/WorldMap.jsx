@@ -37,7 +37,8 @@ export const WorldMap = ({
   showPSKReporter,
   showWSJTX,
   onToggleSatellites, 
-  hoveredSpot 
+  hoveredSpot,
+  callsign = 'N0CALL'
 }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -746,6 +747,7 @@ export const WorldMap = ({
           enabled={pluginLayerStates[layerDef.id]?.enabled || false}
           opacity={pluginLayerStates[layerDef.id]?.opacity || layerDef.defaultOpacity}
           map={mapInstanceRef.current}
+          callsign={callsign}
         />
       ))}
       

@@ -134,7 +134,7 @@ function freqToBand(freq) {
   return 'Other';
 }
 
-export function useLayer({ enabled = false, opacity = 0.7, map = null, callsign = 'VE3TOS' }) {
+export function useLayer({ enabled = false, opacity = 0.7, map = null, callsign }) {
   const [spots, setSpots] = useState([]);
   const [selectedBand, setSelectedBand] = useState('All');
   const [timeWindow, setTimeWindow] = useState(30); // minutes
