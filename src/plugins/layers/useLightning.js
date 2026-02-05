@@ -636,7 +636,7 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
         }
       }
     };
-  }, [map, enabled, statsControl]);
+  }, [map, enabled]); // Remove statsControl from dependencies to avoid re-creation loop
 
   // Update stats panel content
   useEffect(() => {
@@ -817,7 +817,7 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
         } catch (e) {}
       }
     };
-  }, [map, enabled, proximityControl]);
+  }, [map, enabled]); // Remove proximityControl from dependencies
 
   // Update proximity panel content
   useEffect(() => {
