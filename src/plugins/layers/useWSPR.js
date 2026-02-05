@@ -351,11 +351,13 @@ function addMinimizeToggle(element, storageKey) {
   });
 }
 
-export function useLayer({ enabled = false, opacity = 0.7, map = null }) {
+export function useLayer({ enabled = false, opacity = 0.7, map = null, callsign, locator }) {
   const [pathLayers, setPathLayers] = useState([]);
   const [markerLayers, setMarkerLayers] = useState([]);
   const [heatmapLayer, setHeatmapLayer] = useState(null);
   const [wsprData, setWsprData] = useState([]);
+  const [filterByGrid, setFilterByGrid] = useState(false);
+  const [gridFilter, setGridFilter] = useState('');
   
   // v1.2.0 - Advanced Filters
   const [bandFilter, setBandFilter] = useState('all');
@@ -382,6 +384,19 @@ export function useLayer({ enabled = false, opacity = 0.7, map = null }) {
   const animationFrameRef = useRef(null);
 
   // Fetch WSPR data with dynamic time window and band filter
+  // Strip callsign suffix (e.g., VE3TOS/3 → VE3TOS, VE3TOS-4 → VE3TOS)
+  const stripCallsign = (call) => {
+    if (!call) return '';
+    return call.split(/[\/\-]/)[0].toUpperCase();
+  };
+
+  // Set grid filter from locator when enabled
+  useEffect(() => {
+    if (locator && locator.length >= 4) {
+      setGridFilter(locator.substring(0, 4).toUpperCase());
+    }
+  }, [locator]);
+
   useEffect(() => {
     if (!enabled) return;
 
@@ -390,8 +405,57 @@ export function useLayer({ enabled = false, opacity = 0.7, map = null }) {
         const response = await fetch(`/api/wspr/heatmap?minutes=${timeWindow}&band=${bandFilter}`);
         if (response.ok) {
           const data = await response.json();
-          setWsprData(data.spots || []);
-          console.log(`[WSPR Plugin] Loaded ${data.spots?.length || 0} spots (${timeWindow}min, band: ${bandFilter})`);
+          let spots = data.spots || [];
+          
+          // Filter by callsign (TX or RX)
+          if (callsign && callsign !== 'N0CALL') {
+            const baseCall = stripCallsign(callsign);
+            console.log(`[WSPR] Filtering for callsign: ${baseCall}`);
+            
+            spots = spots.map(spot => {
+              // Strip suffixes from sender and receiver
+              return {
+                ...spot,
+                sender: stripCallsign(spot.sender),
+                receiver: stripCallsign(spot.receiver)
+              };
+            }).filter(spot => {
+              // Show spots where I'm TX or RX
+              const isTX = spot.sender === baseCall;
+              const isRX = spot.receiver === baseCall;
+              return isTX || isRX;
+            });
+            
+            console.log(`[WSPR] Found ${spots.length} spots for ${baseCall} (TX or RX)`);
+          }
+          
+          // Convert grid squares to lat/lon if coordinates are missing
+          spots = spots.map(spot => {
+            let updated = { ...spot };
+            
+            // Convert sender grid to lat/lon if missing
+            if ((!spot.senderLat || !spot.senderLon) && spot.senderGrid) {
+              const loc = gridToLatLon(spot.senderGrid);
+              if (loc) {
+                updated.senderLat = loc.lat;
+                updated.senderLon = loc.lon;
+              }
+            }
+            
+            // Convert receiver grid to lat/lon if missing
+            if ((!spot.receiverLat || !spot.receiverLon) && spot.receiverGrid) {
+              const loc = gridToLatLon(spot.receiverGrid);
+              if (loc) {
+                updated.receiverLat = loc.lat;
+                updated.receiverLon = loc.lon;
+              }
+            }
+            
+            return updated;
+          });
+          
+          setWsprData(spots);
+          console.log(`[WSPR Plugin] Loaded ${spots.length} spots (${timeWindow}min, band: ${bandFilter})`);
         }
       } catch (err) {
         console.error('WSPR data fetch error:', err);
@@ -402,7 +466,7 @@ export function useLayer({ enabled = false, opacity = 0.7, map = null }) {
     const interval = setInterval(fetchWSPR, 300000);
 
     return () => clearInterval(interval);
-  }, [enabled, bandFilter, timeWindow]);
+  }, [enabled, bandFilter, timeWindow, callsign]);
 
   // Create UI controls once (v1.2.0+)
   useEffect(() => {
@@ -482,11 +546,26 @@ export function useLayer({ enabled = false, opacity = 0.7, map = null }) {
             </label>
           </div>
           
-          <div>
+          <div style="margin-bottom: 8px;">
             <label style="display: flex; align-items: center; cursor: pointer;">
               <input type="checkbox" id="wspr-heatmap" style="margin-right: 5px;" />
               <span>Show Heatmap</span>
             </label>
+          </div>
+          
+          <div style="margin-bottom: 8px; padding-top: 8px; border-top: 1px solid #555;">
+            <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 5px;">
+              <input type="checkbox" id="wspr-grid-filter" style="margin-right: 5px;" />
+              <span>Filter by Grid Square</span>
+            </label>
+            <input type="text" id="wspr-grid-input" 
+              placeholder="${gridFilter || 'e.g. FN03'}" 
+              value="${gridFilter || ''}"
+              maxlength="4"
+              style="width: 100%; padding: 4px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 3px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase;" />
+            <div style="font-size: 9px; color: var(--text-muted); margin-top: 2px;">
+              Shows TX/RX in first 4 chars of grid
+            </div>
           </div>
         `;
         
@@ -537,6 +616,8 @@ export function useLayer({ enabled = false, opacity = 0.7, map = null }) {
       const heatmapOpacityValue = document.getElementById('heatmap-opacity-value');
       const animCheck = document.getElementById('wspr-animation');
       const heatCheck = document.getElementById('wspr-heatmap');
+      const gridFilterCheck = document.getElementById('wspr-grid-filter');
+      const gridInput = document.getElementById('wspr-grid-input');
       
       if (bandSelect) bandSelect.addEventListener('change', (e) => setBandFilter(e.target.value));
       if (timeSelect) timeSelect.addEventListener('change', (e) => setTimeWindow(parseInt(e.target.value)));
@@ -565,6 +646,18 @@ export function useLayer({ enabled = false, opacity = 0.7, map = null }) {
         console.log('[WSPR] Heatmap toggle:', e.target.checked);
         setShowHeatmap(e.target.checked);
       });
+      if (gridFilterCheck) gridFilterCheck.addEventListener('change', (e) => {
+        setFilterByGrid(e.target.checked);
+        console.log('[WSPR] Grid filter toggle:', e.target.checked);
+      });
+      if (gridInput) {
+        gridInput.addEventListener('input', (e) => {
+          const value = e.target.value.toUpperCase().substring(0, 4);
+          e.target.value = value;
+          setGridFilter(value);
+          console.log('[WSPR] Grid filter value:', value);
+        });
+      }
     }, 100);
     
     // Create stats control
@@ -763,7 +856,22 @@ export function useLayer({ enabled = false, opacity = 0.7, map = null }) {
     const rxStations = new Set();
     
     // Filter by SNR threshold
-    const filteredData = wsprData.filter(spot => (spot.snr || -30) >= snrThreshold);
+    // Filter by SNR threshold and grid square
+    const filteredData = wsprData.filter(spot => {
+      // SNR filter
+      if ((spot.snr || -30) < snrThreshold) return false;
+      
+      // Grid square filter (if enabled)
+      if (filterByGrid && gridFilter && gridFilter.length === 4) {
+        const grid4 = gridFilter.toUpperCase();
+        const senderMatch = spot.senderGrid && spot.senderGrid.toUpperCase().startsWith(grid4);
+        const receiverMatch = spot.receiverGrid && spot.receiverGrid.toUpperCase().startsWith(grid4);
+        // Show if either TX or RX is in the grid square
+        return senderMatch || receiverMatch;
+      }
+      
+      return true;
+    });
     const limitedData = filteredData.slice(0, 500);
     
     // Find best DX paths (longest distance, good SNR)
@@ -987,7 +1095,22 @@ export function useLayer({ enabled = false, opacity = 0.7, map = null }) {
     const stationCounts = {};
     
     // Filter by SNR threshold
-    const filteredData = wsprData.filter(spot => (spot.snr || -30) >= snrThreshold);
+    // Filter by SNR threshold and grid square
+    const filteredData = wsprData.filter(spot => {
+      // SNR filter
+      if ((spot.snr || -30) < snrThreshold) return false;
+      
+      // Grid square filter (if enabled)
+      if (filterByGrid && gridFilter && gridFilter.length === 4) {
+        const grid4 = gridFilter.toUpperCase();
+        const senderMatch = spot.senderGrid && spot.senderGrid.toUpperCase().startsWith(grid4);
+        const receiverMatch = spot.receiverGrid && spot.receiverGrid.toUpperCase().startsWith(grid4);
+        // Show if either TX or RX is in the grid square
+        return senderMatch || receiverMatch;
+      }
+      
+      return true;
+    });
     
     filteredData.forEach(spot => {
       if (!spot.senderLat || !spot.senderLon || !spot.receiverLat || !spot.receiverLon) return;
