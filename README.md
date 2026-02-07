@@ -706,6 +706,9 @@ The Pi setup script installs Node.js 20, clones the repository, builds the front
 
 ### Docker
 
+**Docker images (DockerHub, Github Container Respository [ghcr.io])**
+I've forked the main repository to include a Github actions workflow that creates a Docker image and uploads will automatically trigger a build. The image is deployed to both DockerHub and ghcr.io under my username (kmanwar89). I will remove this once the official image is updated to include an equivalent workflow - part of the motivation to create this was for my own learning.
+
 **Docker Compose (recommended):**
 
 ```bash
