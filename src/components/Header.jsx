@@ -133,7 +133,7 @@ export const Header = ({
 
       {/* Settings & Fullscreen Buttons */}
       <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-        <a
+        {/* <a
           href="https://buymeacoffee.com/k0cjh"
           target="_blank"
           rel="noopener noreferrer"
@@ -178,8 +178,8 @@ export const Header = ({
           title="Donate via PayPal"
         >
           💳 PayPal
-        </a>
-        {showUpdateButton && (
+        </a> */}
+        {/* {showUpdateButton && (
           <button
             onClick={onUpdateClick}
             disabled={updateInProgress}
@@ -197,7 +197,7 @@ export const Header = ({
           >
             {updateInProgress ? 'UPDATING...' : 'UPDATE'}
           </button>
-        )}
+        )} */}
         <button
           onClick={onSettingsClick}
           style={{
