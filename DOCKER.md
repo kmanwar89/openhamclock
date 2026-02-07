@@ -29,6 +29,7 @@ This repository uses GitHub Actions to automatically build, test, and push Docke
 ### Build Locally
 ```bash
 docker build -t openhamclock:local .
+```
 
 ### Build Locally
 This pipeline was constructed with Microsoft Copilot purely as a time-savings measure; I have been using Docker for several years, exclusively
