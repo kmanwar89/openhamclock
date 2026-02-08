@@ -13,14 +13,10 @@ jobs:
       - name: Install GitHub CLI
         run: sudo apt-get install gh
 
-      - name: Authenticate
-        env:
-          GH_TOKEN: ${{ secrets.WORKFLOW_CLEANUP }}
-        run: gh auth login --with-token <<< "$GH_TOKEN"
+      - name: Set token for GitHub CLI
+        run: echo "GH_TOKEN=${{ secrets.WORKFLOW_CLEANUP }}" >> $GITHUB_ENV
 
       - name: Delete workflow runs older than 1 hour
-        env:
-          GH_TOKEN: ${{ secrets.WORKFLOW_CLEANUP }}
         run: |
           cutoff=$(date -u -d "1 hour ago" +%Y-%m-%dT%H:%M:%SZ)
 
