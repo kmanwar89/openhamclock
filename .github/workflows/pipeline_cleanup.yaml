@@ -2,7 +2,7 @@ name: Cleanup All Workflow Runs
 
 on:
   schedule:
-    - cron: "0 * * * *"   # Runs every hour
+    - cron: "0 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -16,16 +16,9 @@ jobs:
       - name: Set token for GitHub CLI
         run: echo "GH_TOKEN=${{ secrets.WORKFLOW_CLEANUP }}" >> $GITHUB_ENV
 
-      - name: List all workflow run IDs (debug)
-        run: |
-          echo "Workflow runs found:"
-          gh api repos/${{ github.repository }}/actions/runs \
-            --paginate \
-            --jq '.workflow_runs[].id'
-
-      - name: Delete ALL workflow runs
+      - name: Delete ALL workflow runs except this one
         run: |
           gh api repos/${{ github.repository }}/actions/runs \
             --paginate \
-            --jq '.workflow_runs[].id' \
+            --jq ".workflow_runs[] | select(.id != $GITHUB_RUN_ID) | .id" \
             | xargs -I{} gh api repos/${{ github.repository }}/actions/runs/{} -X DELETE
