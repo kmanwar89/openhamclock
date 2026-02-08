@@ -1,8 +1,8 @@
-name: Cleanup All Workflow Runs
+name: Cleanup Failed Workflow Runs
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "0 * * * *"   # Runs every hour
   workflow_dispatch:
 
 jobs:
@@ -16,9 +16,15 @@ jobs:
       - name: Set token for GitHub CLI
         run: echo "GH_TOKEN=${{ secrets.WORKFLOW_CLEANUP }}" >> $GITHUB_ENV
 
-      - name: Delete ALL workflow runs except this one
+      - name: Delete FAILED workflow runs (excluding running + current run)
         run: |
           gh api repos/${{ github.repository }}/actions/runs \
             --paginate \
-            --jq ".workflow_runs[] | select(.id != $GITHUB_RUN_ID) | .id" \
+            --jq "
+              .workflow_runs[]
+              | select(.conclusion == \"failure\")        # only failed runs
+              | select(.status != \"in_progress\")         # skip running workflows
+              | select(.id != $GITHUB_RUN_ID)              # skip this cleanup run
+              | .id
+            " \
             | xargs -I{} gh api repos/${{ github.repository }}/actions/runs/{} -X DELETE
