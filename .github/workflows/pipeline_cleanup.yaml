@@ -1,4 +1,4 @@
-name: Cleanup Old Workflow Runs
+name: Cleanup All Workflow Runs
 
 on:
   schedule:
@@ -16,11 +16,16 @@ jobs:
       - name: Set token for GitHub CLI
         run: echo "GH_TOKEN=${{ secrets.WORKFLOW_CLEANUP }}" >> $GITHUB_ENV
 
-      - name: Delete workflow runs older than 1 hour
+      - name: List all workflow run IDs (debug)
         run: |
-          cutoff=$(date -u -d "1 hour ago" +%Y-%m-%dT%H:%M:%SZ)
-
+          echo "Workflow runs found:"
           gh api repos/${{ github.repository }}/actions/runs \
             --paginate \
-            --jq ".workflow_runs[] | select(.created_at < \"$cutoff\") | .id" \
+            --jq '.workflow_runs[].id'
+
+      - name: Delete ALL workflow runs
+        run: |
+          gh api repos/${{ github.repository }}/actions/runs \
+            --paginate \
+            --jq '.workflow_runs[].id' \
             | xargs -I{} gh api repos/${{ github.repository }}/actions/runs/{} -X DELETE
